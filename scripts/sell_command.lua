@@ -26,12 +26,12 @@ local DIALOG_NAME = "jules_seed_exchange"
 
 -- Dapatkan ID Item dari namanya.
 -- Skrip akan berhenti jika nama item salah atau item tidak ditemukan.
--- ID Fallback (342 untuk Lava Seed, 1796 untuk Chandelier) digunakan jika getEnumItem gagal.
-local SEED_ITEM_ID = getEnumItem(SEED_ITEM_NAME) and getEnumItem(SEED_ITEM_NAME):getID() or 342
-local TARGET_ITEM_ID = getEnumItem(TARGET_ITEM_NAME) and getEnumItem(TARGET_ITEM_NAME):getID() or 1796
+-- ID Fallback (5 untuk Lava Seed, 340 untuk Chandelier) digunakan jika getEnumItem gagal.
+local SEED_ITEM_ID = getEnumItem(SEED_ITEM_NAME) and getEnumItem(SEED_ITEM_NAME):getID() or 5
+local TARGET_ITEM_ID = getEnumItem(TARGET_ITEM_NAME) and getEnumItem(TARGET_ITEM_NAME):getID() or 340
 
 if not getEnumItem(SEED_ITEM_NAME) or not getEnumItem(TARGET_ITEM_NAME) then
-    print("PERINGATAN: Tidak dapat menemukan item '" .. SEED_ITEM_NAME .. "' atau '" .. TARGET_ITEM_NAME .. "'. Menggunakan ID fallback. Harap periksa nama item di konfigurasi.")
+    print("PERINGATAN: Fungsi getEnumItem tidak dapat menemukan '" .. SEED_ITEM_NAME .. "' atau '" .. TARGET_ITEM_NAME .. "'. Menggunakan ID fallback yang dikonfigurasi.")
 end
 
 -- 1. Definisi Perintah
