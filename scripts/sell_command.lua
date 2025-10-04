@@ -1,102 +1,113 @@
 --[[
-  Sell Command Script
-  Memungkinkan pemain untuk menukar Lava Seed dengan Chandelier.
-  Dibuat oleh Jules.
+  Item Exchange Script (/sell)
+  Allows players to exchange a specific item for another.
+  Redesigned and fixed by Jules.
 ]]
 
 -- ==============================================================================
---[[ KONFIGURASI ]]
+--[[ CONFIGURATION ]]
 -- ==============================================================================
--- Anda dapat dengan mudah mengubah item dan jumlahnya di sini.
+-- You can easily change the items and their amounts here.
 
--- Nama Item (harus sama persis dengan nama di database item server Anda)
-local SEED_ITEM_NAME = "Lava Seed"
-local TARGET_ITEM_NAME = "Chandelier"
+local config = {
+    -- Item to be given by the player
+    SOURCE_ITEM_NAME = "Lava Seed",
+    SOURCE_ITEM_ID_FALLBACK = 5,
+    SOURCE_ITEM_AMOUNT = 200,
 
--- Rasio Pertukaran
-local SEEDS_REQUIRED = 200
-local TARGET_ITEM_AMOUNT = 1
+    -- Item to be received by the player
+    TARGET_ITEM_NAME = "Chandelier",
+    TARGET_ITEM_ID_FALLBACK = 340,
+    TARGET_ITEM_AMOUNT = 1,
 
--- Nama Dialog (harus unik untuk menghindari konflik dengan skrip lain)
-local DIALOG_NAME = "jules_seed_exchange"
-
--- ==============================================================================
---[[ LOGIKA SKRIP (Jangan diubah kecuali Anda tahu apa yang Anda lakukan) ]]
--- ==============================================================================
-
--- Dapatkan ID Item dari namanya.
--- Skrip akan berhenti jika nama item salah atau item tidak ditemukan.
--- ID Fallback (5 untuk Lava Seed, 340 untuk Chandelier) digunakan jika getEnumItem gagal.
-local SEED_ITEM_ID = getEnumItem(SEED_ITEM_NAME) and getEnumItem(SEED_ITEM_NAME):getID() or 5
-local TARGET_ITEM_ID = getEnumItem(TARGET_ITEM_NAME) and getEnumItem(TARGET_ITEM_NAME):getID() or 340
-
-if not getEnumItem(SEED_ITEM_NAME) or not getEnumItem(TARGET_ITEM_NAME) then
-    print("PERINGATAN: Fungsi getEnumItem tidak dapat menemukan '" .. SEED_ITEM_NAME .. "' atau '" .. TARGET_ITEM_NAME .. "'. Menggunakan ID fallback yang dikonfigurasi.")
-end
-
--- 1. Definisi Perintah
-local sellCommand = {
-    command = "sell",
-    roleRequired = Roles.ROLE_NONE,
-    description = "Membuka dialog untuk menukar seed dengan item."
+    -- Dialog Settings
+    DIALOG_NAME = "jules_item_exchange_v2",
+    COMMAND_NAME = "sell"
 }
 
--- 2. Daftarkan perintah ke server
-registerLuaCommand(sellCommand)
+-- ==============================================================================
+--[[ SCRIPT LOGIC (Do not edit below unless you know what you are doing) ]]
+-- ==============================================================================
 
--- 3. Tangani perintah saat pemain menggunakannya
-onPlayerCommandCallback(function(world, player, fullCommand)
-    local command = fullCommand:match("^(%S+)")
+-- Get Item IDs from their names, using fallbacks if not found.
+local SOURCE_ITEM_ID = getEnumItem(config.SOURCE_ITEM_NAME) and getEnumItem(config.SOURCE_ITEM_NAME):getID() or config.SOURCE_ITEM_ID_FALLBACK
+local TARGET_ITEM_ID = getEnumItem(config.TARGET_ITEM_NAME) and getEnumItem(config.TARGET_ITEM_NAME):getID() or config.TARGET_ITEM_ID_FALLBACK
 
-    if command == sellCommand.command then
-        -- Dapatkan jumlah seed yang dimiliki pemain saat ini
-        local playerSeedCount = player:getItemAmount(SEED_ITEM_ID)
+-- This function generates and shows the exchange dialog to the player.
+-- It can optionally display a message (e.g., for success or error feedback).
+function showExchangeDialog(player, message)
+    local playerSourceItemCount = player:getItemAmount(SOURCE_ITEM_ID)
 
-        -- Buat string dialog menggunakan sintaks dari dokumentasi
-        local dialog = "set_default_color|`o\n"
-        dialog = dialog .. "add_label|big|`wTukar Seed|left|\n"
+    local dialog = "set_default_color|`o\n"
+    dialog = dialog .. "add_label_with_icon|big|`wITEM EXCHANGE|left|2|\n" -- Using a gear icon for the title
+    dialog = dialog .. "add_spacer|small|\n"
+    dialog = dialog .. "add_textbox|`wTrade `4" .. config.SOURCE_ITEM_AMOUNT .. " `w" .. config.SOURCE_ITEM_NAME .. " for `9" .. config.TARGET_ITEM_AMOUNT .. "`w " .. config.TARGET_ITEM_NAME .. ".|left|\n"
+    dialog = dialog .. "add_spacer|big|\n"
+
+    -- Display the items with icons
+    dialog = dialog .. "add_button_with_icon|from_item|" .. config.SOURCE_ITEM_AMOUNT .. " " .. config.SOURCE_ITEM_NAME .. "|staticBlueFrame| ".. SOURCE_ITEM_ID .."|left|\n"
+    dialog = dialog .. "add_label_with_icon|small|`w(You have: `2" .. playerSourceItemCount .. "`w)|left|18|\n" -- Info icon
+    dialog = dialog .. "add_label_with_icon|big|`w V |left|18|\n" -- Down arrow icon
+    dialog = dialog .. "add_button_with_icon|to_item|" .. config.TARGET_ITEM_AMOUNT .. " " .. config.TARGET_ITEM_NAME .. "|staticBlueFrame| ".. TARGET_ITEM_ID .."|left|\n"
+    dialog = dialog .. "add_spacer|big|\n"
+
+    -- Display the feedback message if one was provided
+    if message and message ~= "" then
+        dialog = dialog .. "add_textbox|" .. message .. "|left|\n"
         dialog = dialog .. "add_spacer|small|\n"
-        dialog = dialog .. "add_textbox|`wTukar `4" .. SEEDS_REQUIRED .. " `o" .. SEED_ITEM_NAME .. " `wuntuk `9" .. TARGET_ITEM_AMOUNT .. " " .. TARGET_ITEM_NAME .. ".|left|\n"
-        dialog = dialog .. "add_spacer|small|\n"
-        dialog = dialog .. "add_textbox|`wAnda memiliki: `2" .. playerSeedCount .. " `o" .. SEED_ITEM_NAME .. ".|left|\n"
-        dialog = dialog .. "add_spacer|big|\n"
-        dialog = dialog .. "embed_data|dialog_name|" .. DIALOG_NAME .. "\n"
-        dialog = dialog .. "add_button|exchange|`2Tukar Sekarang|noflags|0|0|\n"
-        dialog = dialog .. "add_quick_exit|\n"
-
-        -- Tampilkan dialog ke pemain
-        player:onDialogRequest(dialog)
-
-        return true -- Perintah berhasil ditangani
     end
 
-    return false -- Bukan perintah ini, biarkan sistem lain yang menangani
+    dialog = dialog .. "embed_data|dialog_name|" .. config.DIALOG_NAME .. "\n"
+    dialog = dialog .. "add_button|exchange|`2Exchange|noflags|0|0|\n"
+    dialog = dialog .. "add_quick_exit|\n"
+
+    player:onDialogRequest(dialog)
+end
+
+-- 1. Define and register the command
+local exchangeCommand = {
+    command = config.COMMAND_NAME,
+    roleRequired = Roles.ROLE_NONE,
+    description = "Opens the item exchange dialog."
+}
+registerLuaCommand(exchangeCommand)
+
+-- 2. Handle the command when a player uses it
+onPlayerCommandCallback(function(world, player, fullCommand)
+    local command = fullCommand:match("^(%S+)")
+    if command == exchangeCommand.command then
+        showExchangeDialog(player) -- Show the dialog without any initial message
+        return true
+    end
+    return false
 end)
 
--- 4. Tangani interaksi dialog
+-- 3. Handle the dialog interaction
 onPlayerDialogCallback(function(world, player, data)
-    -- Pastikan ini adalah dialog yang benar
-    if data["dialog_name"] == DIALOG_NAME then
-        -- Cek jika tombol "exchange" yang ditekan
+    if data["dialog_name"] == config.DIALOG_NAME then
         if data["buttonClicked"] == "exchange" then
-            local playerSeedCount = player:getItemAmount(SEED_ITEM_ID)
+            local playerSourceItemCount = player:getItemAmount(SOURCE_ITEM_ID)
+            local message = ""
 
-            -- Cek apakah pemain memiliki cukup seed
-            if playerSeedCount >= SEEDS_REQUIRED then
-                -- Lakukan pertukaran
-                player:changeItem(SEED_ITEM_ID, -SEEDS_REQUIRED)
-                player:changeItem(TARGET_ITEM_ID, TARGET_ITEM_AMOUNT)
+            -- Check if the player has enough items
+            if playerSourceItemCount >= config.SOURCE_ITEM_AMOUNT then
+                -- Perform the exchange
+                player:changeItem(SOURCE_ITEM_ID, -config.SOURCE_ITEM_AMOUNT)
+                player:changeItem(TARGET_ITEM_ID, config.TARGET_ITEM_AMOUNT)
 
-                -- Beri tahu pemain bahwa transaksi berhasil
-                player:onConsoleMessage("`2Berhasil! `oAnda menukar `4" .. SEEDS_REQUIRED .. " " .. SEED_ITEM_NAME .. " `ountuk `9" .. TARGET_ITEM_AMOUNT .. " " .. TARGET_ITEM_NAME .. ".")
-                player:playAudio("audio/change_item.wav") -- Memainkan suara jika ada
+                -- Set success message
+                message = "`2Success! `wThe exchange was completed."
+                player:playAudio("audio/change_item.wav")
             else
-                -- Beri tahu pemain jika seed tidak cukup
-                player:onConsoleMessage("`4Gagal! `oAnda tidak punya cukup " .. SEED_ITEM_NAME .. ". Anda butuh `4" .. SEEDS_REQUIRED .. ".")
-                player:playAudio("audio/error.wav") -- Memainkan suara error jika ada
+                -- Set error message
+                message = "`4Error: `wYou do not have enough " .. config.SOURCE_ITEM_NAME .. "."
+                player:playAudio("audio/error.wav")
             end
+
+            -- Refresh the dialog to show the message and updated item count
+            showExchangeDialog(player, message)
         end
     end
 end)
 
-print("Skrip perintah '/sell' berhasil dimuat.")
+print("'".. config.COMMAND_NAME .."' command script (v2) loaded successfully.")
